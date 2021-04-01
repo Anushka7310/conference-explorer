@@ -1,0 +1,42 @@
+---
+title: "#RSTAT Tweet Analysis"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(crosstalk)
+library(plotly)
+library(lubridate)
+
+```
+
+Column 
+-----------------------------------------------------------------------
+
+### CrossTalk with plotly
+
+```{r}
+df <- readRDS("R_Events.rds")
+df <- do.call(rbind.data.frame, df)
+df$days <- day(as.POSIXlt(df$created))
+
+# Wrap data frame in SharedData
+sd <- SharedData$new(df)
+
+# Create a filter input
+filter_slider("time", "Time", sd, column=~days, round = TRUE)
+
+# Use SharedData like a dataframe with Crosstalk-enabled widgets
+ plot_ly(
+   data = sd,
+  x=~venue_country,
+  height = "100px"
+)
+
+```
+
