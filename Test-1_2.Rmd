@@ -2,8 +2,9 @@
 title: "## R Conference Events Explorer"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
+    orientation: rows
     vertical_layout: fill
+    theme: bootstrap
 ---
 
 ```{r setup, include=FALSE}
@@ -12,10 +13,37 @@ library(dplyr)
 library(crosstalk)
 library(plotly)
 library(lubridate)
+library(leaflet)
 
 ```
+Row {data-width=150}
+-----------------------------------------------------------------------
 
-Column 
+### Total Yes RSVP
+
+```{r}
+df <- readRDS("R_Events.rds")
+df <- do.call(rbind.data.frame, df)
+df$days <- day(as.POSIXlt(df$created))
+
+yes_rsvp_count <- sum(as.numeric(df$yes_rsvp_count), na.rm = TRUE)
+valueBox(value = yes_rsvp_count,icon = "fa-user-plus",caption = "Total Yes RSVP",color = "green")
+```
+
+### Total Waitlist Count
+```{r}
+waitlist_count <- sum(as.numeric(df$waitlist_count), na.rm = TRUE)
+valueBox(value = waitlist_count,icon = "fa-user-plus",caption = "Total Waitlist Count",color = "orange")
+```
+
+### Unique Country Count
+```{r}
+unique_venue_country <- NROW(unique(df$venue_country))
+valueBox(value = unique_venue_country,icon = "fa-user-plus",caption = "Unique Country Count",color = "coral")
+```
+
+
+Row 
 -----------------------------------------------------------------------
 
 ### CrossTalk with plotly
@@ -24,6 +52,9 @@ Column
 df <- readRDS("R_Events.rds")
 df <- do.call(rbind.data.frame, df)
 df$days <- day(as.POSIXlt(df$created))
+
+#Replace us with US
+df$venue_country[df$venue_country=="us"]<-"US"
 
 # Wrap data frame in SharedData
 sd <- SharedData$new(df)
@@ -35,8 +66,35 @@ filter_slider("time", "Time", sd, column=~days, round = TRUE)
  plot_ly(
    data = sd,
   x=~venue_country,
-  height = "100px"
-)
+  height = "100px",
+  color = I("black")
+) %>%
+   layout(
+     paper_bgcolor = 'transparent',
+     plot_bgcolor = "transparent",
+        xaxis = list(
+          title = "Country",
+          color = '#000000',
+          zeroline = TRUE,
+          showline = TRUE,
+          showticklabels = TRUE,
+          showgrid = FALSE
+        ),
+        yaxis = list(
+          title = "Freq",
+          color = '#000000',
+          showticklabels = TRUE,
+          showgrid = FALSE
+        )
+   )
 
 ```
 
+### Leaflet
+``` {r}
+df <- readRDS("R_Events.rds")
+df <- do.call(rbind.data.frame, df)
+leaflet() %>% addProviderTiles(providers$Stamen.Toner) %>%
+  addMarkers(df$venue_lon, df$venue_lat, popup = df$venue_address_1, label =df$name,  clusterOptions = markerClusterOptions())
+
+```
