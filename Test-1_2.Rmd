@@ -14,9 +14,12 @@ library(crosstalk)
 library(plotly)
 library(lubridate)
 library(leaflet)
+library(wordcloud2)
+library(tm)
+library(rtweet)
 
 ```
-Row {data-width=150}
+Row 
 -----------------------------------------------------------------------
 
 ### Total Yes RSVP
@@ -43,7 +46,7 @@ valueBox(value = unique_venue_country,icon = "fa-user-plus",caption = "Unique Co
 ```
 
 
-Row 
+Row {data-height=500}
 -----------------------------------------------------------------------
 
 ### CrossTalk with plotly
@@ -90,7 +93,36 @@ filter_slider("time", "Time", sd, column=~days, round = TRUE)
 
 ```
 
+
+
+### WordCloud
+
+```{r}
+#Create a vector containing only the text
+data <- rtweet::read_twitter_csv('tweets_database.csv')
+
+text <- data$text
+# Create a corpus  
+docs <- Corpus(VectorSource(text))
+docs <- docs %>%
+  tm_map(removeNumbers) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(stripWhitespace)
+docs <- tm_map(docs, content_transformer(tolower))
+docs <- tm_map(docs, removeWords, stopwords("english"))
+dtm <- TermDocumentMatrix(docs) 
+matrix <- as.matrix(dtm) 
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+df <- data.frame(word = names(words),freq=words)
+
+wordcloud2(data=df, size=1.6, color='random-dark')
+```
+
+Row
+-----------------------------------------------------------------------
+
 ### Leaflet
+
 ``` {r}
 df <- readRDS("R_Events.rds")
 df <- do.call(rbind.data.frame, df)
