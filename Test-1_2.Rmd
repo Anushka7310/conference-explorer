@@ -3,7 +3,8 @@ title: "## R Conference Events Explorer"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
-    vertical_layout: fill
+    vertical_layout: scroll
+    smooth_scroll: true
     theme: bootstrap
 ---
 
@@ -17,6 +18,8 @@ library(leaflet)
 library(wordcloud2)
 library(tm)
 library(rtweet)
+library(wordcloud)
+library(DT)
 
 ```
 Row 
@@ -46,7 +49,7 @@ valueBox(value = unique_venue_country,icon = "fa-user-plus",caption = "Unique Co
 ```
 
 
-Row {data-height=500}
+Row {data-height=650}
 -----------------------------------------------------------------------
 
 ### CrossTalk with plotly
@@ -93,8 +96,6 @@ filter_slider("time", "Time", sd, column=~days, round = TRUE)
 
 ```
 
-
-
 ### WordCloud
 
 ```{r}
@@ -115,18 +116,44 @@ matrix <- as.matrix(dtm)
 words <- sort(rowSums(matrix),decreasing=TRUE) 
 df <- data.frame(word = names(words),freq=words)
 
-wordcloud2(data=df, size=1.6, color='random-dark')
+wordcloud(words = df$word, freq = df$freq, min.freq = 1, max.words=200, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
 ```
 
-Row
+Row 
 -----------------------------------------------------------------------
 
 ### Leaflet
 
-``` {r}
+```{r}
 df <- readRDS("R_Events.rds")
 df <- do.call(rbind.data.frame, df)
-leaflet() %>% addProviderTiles(providers$Stamen.Toner) %>%
+m <- leaflet() %>% addProviderTiles(providers$Stamen.Toner) %>%
   addMarkers(df$venue_lon, df$venue_lat, popup = df$venue_address_1, label =df$name,  clusterOptions = markerClusterOptions())
+m
+```
 
+Row 
+-----------------------------------------------------------------------
+
+### DataTable
+
+```{r}
+df <- readRDS("R_Events.rds")
+df <- do.call(rbind.data.frame, df)
+DT::datatable(
+  df,
+  filter = 'top',
+        extensions = c('Buttons', "ColReorder", "Scroller"), #'Select', 'SearchPanes'
+        options = list(
+          scrollX = TRUE,
+          dom = "Bfrtip",#'Pfrtip',
+          buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+          colReorder = TRUE,
+          deferRender = TRUE,
+          scrollY = 500,
+          scrollX = 1000,
+          scroller = TRUE
+        ),
+        style = "bootstrap"
+)
 ```
